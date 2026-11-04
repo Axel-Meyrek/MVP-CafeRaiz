@@ -11,6 +11,7 @@ import { EnConstruccion } from './pages/EnConstruccion'
 import { Inventario } from './pages/Inventario'
 import { Login } from './pages/Login'
 import { MisVentas } from './pages/MisVentas'
+import { PanelSucursal } from './pages/PanelSucursal'
 import { PuntoDeVenta } from './pages/PuntoDeVenta'
 
 /** Pantallas terminadas; las demás muestran "en construcción". */
@@ -18,6 +19,7 @@ const pantallas: Record<string, ReactNode> = {
   '/venta': <PuntoDeVenta />,
   '/mis-ventas': <MisVentas />,
   '/inventario': <Inventario />,
+  '/panel': <PanelSucursal />,
 }
 
 /** Solo deja pasar a los roles autorizados para la ruta. */
