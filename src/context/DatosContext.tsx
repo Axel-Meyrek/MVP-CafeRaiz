@@ -5,6 +5,7 @@ import {
   registroAcciones as registroInicial,
   ventas as ventasIniciales,
 } from '../data/movimientos'
+import { esHoy } from '../lib/formato'
 import { calcularDescuento, descuentoVigente, estaDisponible } from '../lib/reglas'
 import type { Existencia, LineaVenta, MetodoPago, RegistroAccion, Usuario, Venta } from '../types'
 
@@ -30,6 +31,7 @@ interface Datos {
   registrarEntrada: (usuario: Usuario, productoId: string, cantidad: number) => Resultado
   corregirConteo: (usuario: Usuario, productoId: string, cantidad: number, motivo: string) => Resultado
   cambiarLimite: (usuario: Usuario, productoId: string, limite: number) => Resultado
+  cancelarVenta: (usuario: Usuario, ventaId: string, motivo: string) => Resultado
 }
 
 const DatosContext = createContext<Datos | null>(null)
@@ -213,6 +215,33 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     [modificar, anotar],
   )
 
+  // Solo el gerente de la sucursal, el mismo día, con motivo; devuelve las unidades (reglas 61 a 64).
+  const cancelarVenta = useCallback(
+    (usuario: Usuario, ventaId: string, motivo: string): Resultado => {
+      const venta = ventas.find((v) => v.id === ventaId)
+      const limpio = motivo.trim()
+      if (!venta) return { ok: false, error: 'La venta no existe.' }
+      if (usuario.rol !== 'gerente' || usuario.sucursalId !== venta.sucursalId) {
+        return { ok: false, error: 'Solo el gerente de la sucursal puede cancelar esta venta.' }
+      }
+      if (venta.cancelacion) return { ok: false, error: 'La venta ya está cancelada.' }
+      if (!esHoy(venta.fecha)) return { ok: false, error: 'Solo se pueden cancelar ventas del día.' }
+      if (!limpio) return { ok: false, error: 'Indica un motivo.' }
+
+      const cancelacion = { motivo: limpio, usuarioId: usuario.id, fecha: new Date().toISOString() }
+      setVentas((actuales) => actuales.map((v) => (v.id === ventaId ? { ...v, cancelacion } : v)))
+      setExistencias((actuales) =>
+        actuales.map((e) => {
+          const linea = venta.lineas.find((l) => l.productoId === e.productoId)
+          return linea && e.sucursalId === venta.sucursalId ? { ...e, cantidad: e.cantidad + linea.cantidad } : e
+        }),
+      )
+      anotar(usuario, 'Cancelación de venta', `Folio ${venta.folio} · ${limpio}`)
+      return { ok: true }
+    },
+    [ventas, anotar],
+  )
+
   const valor = useMemo(
     () => ({
       existencias,
@@ -225,6 +254,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       registrarEntrada,
       corregirConteo,
       cambiarLimite,
+      cancelarVenta,
     }),
     [
       existencias,
@@ -237,6 +267,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       registrarEntrada,
       corregirConteo,
       cambiarLimite,
+      cancelarVenta,
     ],
   )
   return <DatosContext.Provider value={valor}>{children}</DatosContext.Provider>
