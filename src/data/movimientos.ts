@@ -46,21 +46,30 @@ const productosActivos = productos.filter((p) => p.activo)
 function generarVentas(): Venta[] {
   const ventas: Venta[] = []
   let folio = 1000
-  const hoy = new Date('2026-11-03T07:00:00-06:00')
+  // Las ventas de ejemplo se acomodan a la fecha real: siempre hay ventas "de hoy" hasta la hora actual.
+  const ahora = new Date()
+  const apertura = new Date(ahora)
+  apertura.setHours(7, 0, 0, 0)
+  const minutosDeHoy = Math.floor((ahora.getTime() - apertura.getTime()) / 60000)
 
   for (let dia = 6; dia >= 0; dia--) {
     for (const sucursal of sucursales) {
       const equipo = usuarios.filter((u) => u.sucursalId === sucursal.id && u.activo)
       const cuantas = entero(14, 30)
+      const minutosAbierto = dia === 0 ? Math.min(12 * 60, minutosDeHoy) : 12 * 60
+      if (minutosAbierto <= 0) continue
       for (let i = 0; i < cuantas; i++) {
-        const fecha = new Date(hoy)
-        fecha.setDate(hoy.getDate() - dia)
-        fecha.setMinutes(fecha.getMinutes() + entero(0, 12 * 60))
+        const fecha = new Date(apertura)
+        fecha.setDate(apertura.getDate() - dia)
+        fecha.setMinutes(fecha.getMinutes() + entero(0, minutosAbierto))
 
-        const lineas = Array.from({ length: entero(1, 3) }, () => {
-          const producto = elegir(productosActivos)
-          return { productoId: producto.id, cantidad: entero(1, 2), precioUnitario: producto.precio }
-        })
+        // Productos distintos en cada venta, como en el ticket real.
+        const elegidos = new Set(Array.from({ length: entero(1, 3) }, () => elegir(productosActivos)))
+        const lineas = [...elegidos].map((producto) => ({
+          productoId: producto.id,
+          cantidad: entero(1, 2),
+          precioUnitario: producto.precio,
+        }))
         const subtotal = lineas.reduce((suma, l) => suma + l.cantidad * l.precioUnitario, 0)
         const descuento = azar() < 0.15 ? elegir(descuentosActivos) : null
         const montoDescuento = descuento
@@ -83,18 +92,21 @@ function generarVentas(): Venta[] {
       }
     }
   }
+  // Folios consecutivos en orden cronológico.
   return ventas
+    .sort((a, b) => a.fecha.localeCompare(b.fecha))
+    .map((venta, i) => ({ ...venta, folio: 1000 + i, id: `v-${1000 + i}` }))
 }
 
 export const ventas = generarVentas()
 
 // Una venta cancelada de ejemplo (reglas 61 a 65).
-const ventaCancelada = ventas.find((v) => v.sucursalId === 'centro')
+const ventaCancelada = ventas.findLast((v) => v.usuarioId === 'u-b-centro-1')
 if (ventaCancelada) {
   ventaCancelada.cancelacion = {
     motivo: 'Cobro duplicado',
     usuarioId: 'u-g-centro',
-    fecha: ventaCancelada.fecha,
+    fecha: new Date(new Date(ventaCancelada.fecha).getTime() + 4 * 60000).toISOString(),
   }
 }
 
