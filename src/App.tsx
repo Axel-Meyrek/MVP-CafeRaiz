@@ -9,6 +9,7 @@ import { navegacion, rutaInicial } from './lib/navegacion'
 import type { Rol } from './types'
 import { EnConstruccion } from './pages/EnConstruccion'
 import { Inventario } from './pages/Inventario'
+import { InventarioGlobal } from './pages/InventarioGlobal'
 import { Login } from './pages/Login'
 import { MisVentas } from './pages/MisVentas'
 import { PanelSucursal } from './pages/PanelSucursal'
@@ -28,6 +29,7 @@ const pantallas: Record<string, ReactNode> = {
   '/personal': <Personal />,
   '/reporte': <ReporteSucursal />,
   '/general': <VistaGeneral />,
+  '/inventario-global': <InventarioGlobal />,
 }
 
 /** Solo deja pasar a los roles autorizados para la ruta. */

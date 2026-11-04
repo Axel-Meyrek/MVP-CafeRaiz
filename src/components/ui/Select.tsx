@@ -30,8 +30,10 @@ export function Select({ valor, alCambiar, opciones, marcador = 'Selecciona…',
             className,
           )}
         >
-          <RadixSelect.Value placeholder={marcador} />
-          <RadixSelect.Icon>
+          <span className="min-w-0 truncate text-left whitespace-nowrap">
+            <RadixSelect.Value placeholder={marcador} />
+          </span>
+          <RadixSelect.Icon className="shrink-0">
             <ChevronDown
               size={16}
               strokeWidth={1.5}
