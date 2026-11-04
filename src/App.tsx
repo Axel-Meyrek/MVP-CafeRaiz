@@ -3,11 +3,18 @@ import type { ReactNode } from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from './components/layout/AppLayout'
 import { ToastProvider } from './components/ui/Toast'
+import { DatosProvider } from './context/DatosContext'
 import { SesionProvider, useSesion } from './context/SesionContext'
 import { navegacion, rutaInicial } from './lib/navegacion'
 import type { Rol } from './types'
 import { EnConstruccion } from './pages/EnConstruccion'
 import { Login } from './pages/Login'
+import { PuntoDeVenta } from './pages/PuntoDeVenta'
+
+/** Pantallas terminadas; las demás muestran "en construcción". */
+const pantallas: Record<string, ReactNode> = {
+  '/venta': <PuntoDeVenta />,
+}
 
 /** Solo deja pasar a los roles autorizados para la ruta. */
 function Protegida({ roles, children }: { roles?: Rol[]; children: ReactNode }) {
@@ -26,33 +33,35 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <SesionProvider>
-        <ToastProvider>
-          <HashRouter>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route
-                element={
-                  <Protegida>
-                    <AppLayout />
-                  </Protegida>
-                }
-              >
-                {navegacion.map(({ ruta, etiqueta, roles }) => (
-                  <Route
-                    key={ruta}
-                    path={ruta}
-                    element={
-                      <Protegida roles={roles}>
-                        <EnConstruccion titulo={etiqueta} />
-                      </Protegida>
-                    }
-                  />
-                ))}
-              </Route>
-              <Route path="*" element={<Inicio />} />
-            </Routes>
-          </HashRouter>
-        </ToastProvider>
+        <DatosProvider>
+          <ToastProvider>
+            <HashRouter>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route
+                  element={
+                    <Protegida>
+                      <AppLayout />
+                    </Protegida>
+                  }
+                >
+                  {navegacion.map(({ ruta, etiqueta, roles }) => (
+                    <Route
+                      key={ruta}
+                      path={ruta}
+                      element={
+                        <Protegida roles={roles}>
+                          {pantallas[ruta] ?? <EnConstruccion titulo={etiqueta} />}
+                        </Protegida>
+                      }
+                    />
+                  ))}
+                </Route>
+                <Route path="*" element={<Inicio />} />
+              </Routes>
+            </HashRouter>
+          </ToastProvider>
+        </DatosProvider>
       </SesionProvider>
     </MotionConfig>
   )

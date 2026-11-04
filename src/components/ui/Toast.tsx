@@ -1,20 +1,23 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { Check } from 'lucide-react'
+import { CircleAlert, Check } from 'lucide-react'
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
 
 interface Aviso {
   id: number
   mensaje: string
+  tipo: TipoAviso
 }
 
-const ToastContext = createContext<(mensaje: string) => void>(() => {})
+type TipoAviso = 'exito' | 'error'
+
+const ToastContext = createContext<(mensaje: string, tipo?: TipoAviso) => void>(() => {})
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [avisos, setAvisos] = useState<Aviso[]>([])
 
-  const avisar = useCallback((mensaje: string) => {
-    const id = Date.now()
-    setAvisos((actuales) => [...actuales, { id, mensaje }])
+  const avisar = useCallback((mensaje: string, tipo: TipoAviso = 'exito') => {
+    const id = Date.now() + Math.random()
+    setAvisos((actuales) => [...actuales, { id, mensaje, tipo }])
     setTimeout(() => setAvisos((actuales) => actuales.filter((a) => a.id !== id)), 3200)
   }, [])
 
@@ -33,7 +36,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               transition={{ duration: 0.22, ease: [0.25, 1, 0.5, 1] }}
               className="flex items-center gap-2.5 rounded-md bg-tinta px-4 py-2.5 text-sm text-crema"
             >
-              <Check size={14} strokeWidth={2} className="text-crema/70" />
+              {aviso.tipo === 'error' ? (
+                <CircleAlert size={14} strokeWidth={2} className="text-[#e9a89b]" />
+              ) : (
+                <Check size={14} strokeWidth={2} className="text-crema/70" />
+              )}
               {aviso.mensaje}
             </motion.div>
           ))}
