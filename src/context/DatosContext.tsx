@@ -131,9 +131,29 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       if (!sucursales.find((s) => s.id === nueva.sucursalId)?.activa) {
         return { ok: false, error: 'La sucursal está dada de baja.' }
       }
+      // Solo vende un barista o gerente activo, y solo en su propia sucursal (reglas 16, 19, 23 y 55).
+      const vendedor = usuarios.find((u) => u.id === nueva.usuarioId)
+      if (!vendedor?.activo || (vendedor.rol !== 'barista' && vendedor.rol !== 'gerente')) {
+        return { ok: false, error: 'No tienes permiso para registrar ventas.' }
+      }
+      if (vendedor.sucursalId !== nueva.sucursalId) {
+        return { ok: false, error: 'Solo puedes vender en tu propia sucursal.' }
+      }
+      if (nueva.metodoPago !== 'efectivo' && nueva.metodoPago !== 'tarjeta') {
+        return { ok: false, error: 'Elige efectivo o tarjeta.' }
+      }
+
+      // Se agrupan las líneas por producto para que la existencia nunca quede negativa (reglas 37 y 56).
+      const agrupadas = new Map<string, number>()
+      for (const linea of nueva.lineas) {
+        if (!Number.isInteger(linea.cantidad) || linea.cantidad <= 0) {
+          return { ok: false, error: 'Las cantidades deben ser números enteros mayores que cero.' }
+        }
+        agrupadas.set(linea.productoId, (agrupadas.get(linea.productoId) ?? 0) + linea.cantidad)
+      }
 
       const lineas: LineaVenta[] = []
-      for (const linea of nueva.lineas) {
+      for (const linea of [...agrupadas].map(([productoId, cantidad]) => ({ productoId, cantidad }))) {
         const producto = productos.find((p) => p.id === linea.productoId)
         const existencia = existencias.find(
           (e) => e.sucursalId === nueva.sucursalId && e.productoId === linea.productoId,
@@ -179,7 +199,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       )
       return { ok: true, venta }
     },
-    [existencias, ventas, productos, descuentos, sucursales],
+    [existencias, ventas, productos, descuentos, sucursales, usuarios],
   )
 
   // Barista o gerente; requiere motivo y no cambia la existencia (reglas 44 a 47).
@@ -226,7 +246,8 @@ export function DatosProvider({ children }: { children: ReactNode }) {
 
   // La existencia nunca es negativa y toda corrección lleva motivo (reglas 21 y 37).
   const corregirConteo = useCallback(
-    (usuario: Usuario, productoId: string, cantidad: number, motivo: string) => {
+    (usuario: Usuario, productoId: string, cantidad: number, motivoOriginal: string) => {
+      const motivo = motivoOriginal.trim()
       const resultado = modificar(usuario, ['gerente'], productoId, (e) => {
         if (!esEntero(cantidad)) return 'El conteo debe ser un número entero de cero o más.'
         if (!motivo) return 'Indica un motivo.'
