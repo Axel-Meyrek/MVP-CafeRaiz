@@ -6,7 +6,8 @@ import { Marca } from '../components/layout/Marca'
 import { Button } from '../components/ui/Button'
 import { Tabs } from '../components/ui/Tabs'
 import { useSesion } from '../context/SesionContext'
-import { sucursales, usuarios } from '../data/catalogo'
+import { useDatos } from '../context/DatosContext'
+import { sucursales } from '../data/catalogo'
 import { cn } from '../lib/cn'
 import { iniciales } from '../lib/formato'
 import { rutaInicial } from '../lib/navegacion'
@@ -24,6 +25,7 @@ const suave = [0.25, 1, 0.5, 1] as const
 
 export function Login() {
   const { usuario, iniciarSesion } = useSesion()
+  const { usuarios } = useDatos()
   const navegar = useNavigate()
   const [rol, setRol] = useState<Rol>('barista')
   const [seleccionado, setSeleccionado] = useState<string | null>(null)

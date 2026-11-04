@@ -11,7 +11,7 @@ import { Tabs } from '../components/ui/Tabs'
 import { useAviso } from '../components/ui/Toast'
 import { useDatos, type Resultado } from '../context/DatosContext'
 import { useSesion } from '../context/SesionContext'
-import { productos, usuarios } from '../data/catalogo'
+import { productos } from '../data/catalogo'
 import { cn } from '../lib/cn'
 import { estadoExistencia } from '../lib/reglas'
 import type { Existencia, Producto } from '../types'
@@ -204,6 +204,7 @@ function etiquetaEstado({ estado, existencia }: Fila): { texto: string; badge: E
 
 function FilaInventario({ fila, acciones }: { fila: Fila; acciones: ReactNode }) {
   const { producto, existencia, estado } = fila
+  const { usuarios } = useDatos()
   const etiqueta = etiquetaEstado(fila)
   const marca = existencia.agotadoManual
   const autor = marca && usuarios.find((u) => u.id === marca.usuarioId)?.nombre.split(' ')[0]

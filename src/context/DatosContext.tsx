@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
-import { descuentos, productos } from '../data/catalogo'
+import { descuentos, productos, usuarios as usuariosIniciales } from '../data/catalogo'
 import {
   existencias as existenciasIniciales,
   registroAcciones as registroInicial,
@@ -32,6 +32,9 @@ interface Datos {
   corregirConteo: (usuario: Usuario, productoId: string, cantidad: number, motivo: string) => Resultado
   cambiarLimite: (usuario: Usuario, productoId: string, limite: number) => Resultado
   cancelarVenta: (usuario: Usuario, ventaId: string, motivo: string) => Resultado
+  usuarios: Usuario[]
+  crearBarista: (gerente: Usuario, nombre: string) => Resultado
+  desactivarBarista: (gerente: Usuario, baristaId: string) => Resultado
 }
 
 const DatosContext = createContext<Datos | null>(null)
@@ -44,6 +47,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
   const [existencias, setExistencias] = useState(existenciasIniciales)
   const [ventas, setVentas] = useState(ventasIniciales)
   const [registro, setRegistro] = useState(registroInicial)
+  const [usuarios, setUsuarios] = useState(usuariosIniciales)
 
   const existenciaDe = useCallback(
     (sucursalId: string, productoId: string) =>
@@ -242,6 +246,49 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     [ventas, anotar],
   )
 
+  // Un gerente solo da de alta baristas de su propia sucursal (regla 11).
+  const crearBarista = useCallback(
+    (gerente: Usuario, nombre: string): Resultado => {
+      const limpio = nombre.trim().replace(/\s+/g, ' ')
+      if (gerente.rol !== 'gerente' || !gerente.sucursalId) {
+        return { ok: false, error: 'Solo un gerente puede dar de alta baristas.' }
+      }
+      if (limpio.length < 3) return { ok: false, error: 'Escribe el nombre completo.' }
+      const repetido = usuarios.some(
+        (u) => u.sucursalId === gerente.sucursalId && u.nombre.toLowerCase() === limpio.toLowerCase(),
+      )
+      if (repetido) return { ok: false, error: 'Ya existe una persona con ese nombre en la sucursal.' }
+
+      const nuevo: Usuario = {
+        id: `u-b-${gerente.sucursalId}-${Date.now()}`,
+        nombre: limpio,
+        rol: 'barista',
+        sucursalId: gerente.sucursalId,
+        activo: true,
+      }
+      setUsuarios((actuales) => [...actuales, nuevo])
+      anotar(gerente, 'Alta de barista', limpio)
+      return { ok: true }
+    },
+    [usuarios, anotar],
+  )
+
+  // Desactivar, nunca borrar: el historial se conserva (reglas 11 a 13).
+  const desactivarBarista = useCallback(
+    (gerente: Usuario, baristaId: string): Resultado => {
+      const barista = usuarios.find((u) => u.id === baristaId)
+      if (!barista || barista.rol !== 'barista') return { ok: false, error: 'La persona no es barista.' }
+      if (gerente.rol !== 'gerente' || gerente.sucursalId !== barista.sucursalId) {
+        return { ok: false, error: 'Solo el gerente de su sucursal puede desactivarla.' }
+      }
+      if (!barista.activo) return { ok: false, error: 'Ya está desactivada.' }
+      setUsuarios((actuales) => actuales.map((u) => (u.id === baristaId ? { ...u, activo: false } : u)))
+      anotar(gerente, 'Desactivación de barista', barista.nombre)
+      return { ok: true }
+    },
+    [usuarios, anotar],
+  )
+
   const valor = useMemo(
     () => ({
       existencias,
@@ -255,6 +302,9 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       corregirConteo,
       cambiarLimite,
       cancelarVenta,
+      usuarios,
+      crearBarista,
+      desactivarBarista,
     }),
     [
       existencias,
@@ -268,6 +318,9 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       corregirConteo,
       cambiarLimite,
       cancelarVenta,
+      usuarios,
+      crearBarista,
+      desactivarBarista,
     ],
   )
   return <DatosContext.Provider value={valor}>{children}</DatosContext.Provider>

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
-import { sucursales, usuarios } from '../data/catalogo'
+import { sucursales } from '../data/catalogo'
 import type { Sucursal, Usuario } from '../types'
+import { useDatos } from './DatosContext'
 
 const CLAVE = 'cafe-raiz:sesion'
 
@@ -13,26 +14,26 @@ interface Sesion {
 
 const SesionContext = createContext<Sesion | null>(null)
 
-function leerSesionGuardada(): Usuario | null {
-  const id = sessionStorage.getItem(CLAVE)
-  const usuario = usuarios.find((u) => u.id === id)
-  // Un usuario desactivado no puede entrar (regla 12).
-  return usuario?.activo ? usuario : null
-}
-
 export function SesionProvider({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<Usuario | null>(leerSesionGuardada)
+  const { usuarios } = useDatos()
+  const [usuarioId, setUsuarioId] = useState<string | null>(() => sessionStorage.getItem(CLAVE))
 
-  const iniciarSesion = useCallback((usuarioId: string) => {
-    const encontrado = usuarios.find((u) => u.id === usuarioId)
-    if (!encontrado?.activo) return
-    sessionStorage.setItem(CLAVE, encontrado.id)
-    setUsuario(encontrado)
-  }, [])
+  // Un usuario desactivado no puede entrar; si lo desactivan, su sesión termina (regla 12).
+  const encontrado = usuarios.find((u) => u.id === usuarioId)
+  const usuario = encontrado?.activo ? encontrado : null
+
+  const iniciarSesion = useCallback(
+    (id: string) => {
+      if (!usuarios.find((u) => u.id === id)?.activo) return
+      sessionStorage.setItem(CLAVE, id)
+      setUsuarioId(id)
+    },
+    [usuarios],
+  )
 
   const cerrarSesion = useCallback(() => {
     sessionStorage.removeItem(CLAVE)
-    setUsuario(null)
+    setUsuarioId(null)
   }, [])
 
   const valor = useMemo<Sesion>(

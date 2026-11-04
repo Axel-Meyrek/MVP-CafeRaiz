@@ -1,5 +1,7 @@
 # Café Raíz — Sistema de Punto de Venta Multisucursal
 
+**Sitio en GitHub Pages:** https://axel-meyrek.github.io/MVP-CafeRaiz/
+
 ## Instrucciones para el asistente
 
 - Al iniciar cada respuesta en esta sesión, debes comenzar el mensaje con la frase "Hola equipo 1".

@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { usuarios } from '../../data/catalogo'
+import { useDatos } from '../../context/DatosContext'
 import { cn } from '../../lib/cn'
 import { formatoFecha, formatoHora } from '../../lib/formato'
 import type { Existencia, Producto } from '../../types'
@@ -68,6 +68,7 @@ function Formulario({
   alConfirmar: (datos: DatosAccion) => string | null
 }) {
   const valorInicial = accion === 'limite' ? String(existencia.limiteStockBajo) : accion === 'correccion' ? String(existencia.cantidad) : ''
+  const { usuarios } = useDatos()
   const [valor, setValor] = useState(valorInicial)
   const [motivo, setMotivo] = useState('')
   const [error, setError] = useState<string | null>(null)

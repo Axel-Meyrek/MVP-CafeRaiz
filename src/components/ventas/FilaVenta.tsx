@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { descuentos, productos, usuarios } from '../../data/catalogo'
+import { useDatos } from '../../context/DatosContext'
+import { descuentos, productos } from '../../data/catalogo'
 import { cn } from '../../lib/cn'
 import { formatoFecha, formatoHora, formatoMoneda } from '../../lib/formato'
 import type { Venta } from '../../types'
@@ -30,6 +31,7 @@ export function FilaVenta({ venta, abierta, alAlternar, mostrarVendedor, mostrar
     .join(', ')
   const subtotal = venta.lineas.reduce((suma, l) => suma + l.cantidad * l.precioUnitario, 0)
   const descuento = descuentos.find((d) => d.id === venta.descuentoId)
+  const { usuarios } = useDatos()
   const vendedor = usuarios.find((u) => u.id === venta.usuarioId)?.nombre
 
   return (

@@ -13,7 +13,6 @@ import { useAviso } from '../components/ui/Toast'
 import { FilaVenta } from '../components/ventas/FilaVenta'
 import { useDatos } from '../context/DatosContext'
 import { useSesion } from '../context/SesionContext'
-import { usuarios } from '../data/catalogo'
 import { cn } from '../lib/cn'
 import { claveDia, esAyer, esHoy, formatoMoneda } from '../lib/formato'
 import type { Venta } from '../types'
@@ -32,7 +31,7 @@ function enPeriodo(venta: Venta, periodo: string) {
 
 export function VentasSucursal() {
   const { usuario, sucursal } = useSesion()
-  const { ventas, cancelarVenta } = useDatos()
+  const { ventas, usuarios, cancelarVenta } = useDatos()
   const avisar = useAviso()
 
   const [periodo, setPeriodo] = useState('hoy')

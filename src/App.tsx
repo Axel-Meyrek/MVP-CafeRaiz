@@ -12,6 +12,7 @@ import { Inventario } from './pages/Inventario'
 import { Login } from './pages/Login'
 import { MisVentas } from './pages/MisVentas'
 import { PanelSucursal } from './pages/PanelSucursal'
+import { Personal } from './pages/Personal'
 import { PuntoDeVenta } from './pages/PuntoDeVenta'
 import { VentasSucursal } from './pages/VentasSucursal'
 
@@ -22,6 +23,7 @@ const pantallas: Record<string, ReactNode> = {
   '/inventario': <Inventario />,
   '/panel': <PanelSucursal />,
   '/ventas': <VentasSucursal />,
+  '/personal': <Personal />,
 }
 
 /** Solo deja pasar a los roles autorizados para la ruta. */
@@ -40,8 +42,8 @@ function Inicio() {
 export default function App() {
   return (
     <MotionConfig reducedMotion="user">
-      <SesionProvider>
-        <DatosProvider>
+      <DatosProvider>
+        <SesionProvider>
           <ToastProvider>
             <HashRouter>
               <Routes>
@@ -69,8 +71,8 @@ export default function App() {
               </Routes>
             </HashRouter>
           </ToastProvider>
-        </DatosProvider>
-      </SesionProvider>
+        </SesionProvider>
+      </DatosProvider>
     </MotionConfig>
   )
 }
