@@ -16,6 +16,7 @@ import { Personal } from './pages/Personal'
 import { PuntoDeVenta } from './pages/PuntoDeVenta'
 import { ReporteSucursal } from './pages/ReporteSucursal'
 import { VentasSucursal } from './pages/VentasSucursal'
+import { VistaGeneral } from './pages/VistaGeneral'
 
 /** Pantallas terminadas; las demás muestran "en construcción". */
 const pantallas: Record<string, ReactNode> = {
@@ -26,6 +27,7 @@ const pantallas: Record<string, ReactNode> = {
   '/ventas': <VentasSucursal />,
   '/personal': <Personal />,
   '/reporte': <ReporteSucursal />,
+  '/general': <VistaGeneral />,
 }
 
 /** Solo deja pasar a los roles autorizados para la ruta. */

@@ -16,13 +16,15 @@ import type { Rol } from '../types'
 export interface ElementoNavegacion {
   ruta: string
   etiqueta: string
+  /** Versión corta para la barra inferior del celular. */
+  corta?: string
   icono: LucideIcon
   roles: Rol[]
 }
 
 /** Qué ve cada rol en la navegación (reglas 14 a 26). */
 export const navegacion: ElementoNavegacion[] = [
-  { ruta: '/general', etiqueta: 'Vista general', icono: LayoutDashboard, roles: ['admin'] },
+  { ruta: '/general', etiqueta: 'Vista general', corta: 'General', icono: LayoutDashboard, roles: ['admin'] },
   { ruta: '/panel', etiqueta: 'Panel', icono: LayoutDashboard, roles: ['gerente'] },
   { ruta: '/venta', etiqueta: 'Vender', icono: ShoppingCart, roles: ['barista', 'gerente'] },
   { ruta: '/mis-ventas', etiqueta: 'Mis ventas', icono: Receipt, roles: ['barista'] },
@@ -34,7 +36,7 @@ export const navegacion: ElementoNavegacion[] = [
   { ruta: '/productos', etiqueta: 'Productos', icono: Package, roles: ['admin'] },
   { ruta: '/descuentos', etiqueta: 'Descuentos', icono: Tag, roles: ['admin'] },
   { ruta: '/sucursales', etiqueta: 'Sucursales', icono: Building2, roles: ['admin'] },
-  { ruta: '/comparativo', etiqueta: 'Comparativo', icono: ChartColumn, roles: ['admin'] },
+  { ruta: '/comparativo', etiqueta: 'Comparativo', corta: 'Comparar', icono: ChartColumn, roles: ['admin'] },
   { ruta: '/registro', etiqueta: 'Registro', icono: History, roles: ['admin'] },
 ]
 
