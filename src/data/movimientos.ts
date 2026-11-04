@@ -110,29 +110,41 @@ if (ventaCancelada) {
   }
 }
 
-export const registroAcciones: RegistroAccion[] = [
-  {
-    id: 'r-1',
-    fecha: '2026-11-01T10:30:00-06:00',
-    usuarioId: 'u-admin',
-    sucursalId: null,
-    accion: 'Cambio de precio',
-    detalle: 'Flat white: $56.00 → $60.00',
-  },
-  {
-    id: 'r-2',
-    fecha: '2026-11-02T18:05:00-06:00',
-    usuarioId: 'u-admin',
-    sucursalId: null,
-    accion: 'Baja de producto',
-    detalle: 'Pan de elote',
-  },
-  {
-    id: 'r-3',
-    fecha: '2026-11-03T09:12:00-06:00',
-    usuarioId: 'u-b-cholula-1',
-    sucursalId: 'cholula',
-    accion: 'Agotado manual',
-    detalle: 'Croissant · Lote dañado en el traslado',
-  },
+/** Fecha relativa a hoy (hora local) para que el registro de ejemplo siempre sea reciente. */
+const haceDias = (dias: number, hora: number, minuto: number) => {
+  const fecha = new Date()
+  fecha.setDate(fecha.getDate() - dias)
+  fecha.setHours(hora, minuto, 0, 0)
+  return fecha.toISOString()
+}
+
+const semilla: Omit<RegistroAccion, 'id'>[] = [
+  { fecha: haceDias(6, 8, 40), usuarioId: 'u-g-angelopolis', sucursalId: 'angelopolis', accion: 'Alta de barista', detalle: 'Valeria Luna' },
+  { fecha: haceDias(5, 7, 15), usuarioId: 'u-g-centro', sucursalId: 'centro', accion: 'Entrada de mercancía', detalle: 'Concha · +40 pzs' },
+  { fecha: haceDias(5, 19, 50), usuarioId: 'u-g-angelopolis', sucursalId: 'angelopolis', accion: 'Desactivación de barista', detalle: 'Jorge Herrera' },
+  { fecha: haceDias(4, 12, 5), usuarioId: 'u-admin', sucursalId: null, accion: 'Alta de descuento', detalle: 'Buen Fin · 15% hasta 2026-11-20' },
+  { fecha: haceDias(3, 9, 20), usuarioId: 'u-g-la-paz', sucursalId: 'la-paz', accion: 'Corrección de conteo', detalle: 'Galleta de avena · 36 → 33 · Piezas rotas' },
+  { fecha: haceDias(2, 10, 30), usuarioId: 'u-admin', sucursalId: null, accion: 'Cambio de precio', detalle: 'Flat white: $56.00 → $60.00' },
+  { fecha: haceDias(2, 16, 45), usuarioId: 'u-g-zavaleta', sucursalId: 'zavaleta', accion: 'Límite de stock bajo', detalle: 'Cold brew · 5 → 8' },
+  { fecha: haceDias(1, 18, 5), usuarioId: 'u-admin', sucursalId: null, accion: 'Baja de producto', detalle: 'Pan de elote' },
+  { fecha: haceDias(0, 7, 10), usuarioId: 'u-g-cholula', sucursalId: 'cholula', accion: 'Entrada de mercancía', detalle: 'Latte frío · +24 pzs' },
+  { fecha: haceDias(0, 9, 12), usuarioId: 'u-b-cholula-1', sucursalId: 'cholula', accion: 'Agotado manual', detalle: 'Croissant · Lote dañado en el traslado' },
 ]
+
+// La cancelación de ejemplo también queda en el registro (regla 79).
+if (ventaCancelada?.cancelacion) {
+  semilla.push({
+    fecha: ventaCancelada.cancelacion.fecha,
+    usuarioId: 'u-g-centro',
+    sucursalId: 'centro',
+    accion: 'Cancelación de venta',
+    detalle: `Folio ${ventaCancelada.folio} · Cobro duplicado`,
+  })
+}
+
+// Solo lo que ya ocurrió, en orden cronológico.
+const ahora = new Date().toISOString()
+export const registroAcciones: RegistroAccion[] = semilla
+  .filter((r) => r.fecha <= ahora)
+  .sort((a, b) => a.fecha.localeCompare(b.fecha))
+  .map((r, i) => Object.freeze({ ...r, id: `r-${i + 1}` }))

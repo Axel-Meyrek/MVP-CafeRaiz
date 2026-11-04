@@ -89,17 +89,18 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     [existencias],
   )
 
+  // El registro solo crece: no hay forma de modificar ni borrar una entrada (regla 80).
   const anotar = useCallback((usuario: Usuario, accion: string, detalle: string) => {
     setRegistro((actual) => [
       ...actual,
-      {
+      Object.freeze({
         id: `r-${Date.now()}-${actual.length}`,
         fecha: new Date().toISOString(),
         usuarioId: usuario.id,
         sucursalId: usuario.sucursalId,
         accion,
         detalle,
-      },
+      }),
     ])
   }, [])
 

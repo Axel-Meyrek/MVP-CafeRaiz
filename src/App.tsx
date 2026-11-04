@@ -18,6 +18,7 @@ import { Personal } from './pages/Personal'
 import { Productos } from './pages/Productos'
 import { Sucursales } from './pages/Sucursales'
 import { PuntoDeVenta } from './pages/PuntoDeVenta'
+import { Registro } from './pages/Registro'
 import { ReporteComparativo } from './pages/ReporteComparativo'
 import { ReporteSucursal } from './pages/ReporteSucursal'
 import { VentasSucursal } from './pages/VentasSucursal'
@@ -38,6 +39,7 @@ const pantallas: Record<string, ReactNode> = {
   '/descuentos': <Descuentos />,
   '/sucursales': <Sucursales />,
   '/comparativo': <ReporteComparativo />,
+  '/registro': <Registro />,
 }
 
 /** Solo deja pasar a los roles autorizados para la ruta. */
