@@ -1,0 +1,100 @@
+@import 'tailwindcss';
+
+/*
+ * Sistema de diseño de Café Raíz.
+ * Jerarquía por espacio, líneas de 1px y peso tipográfico; un solo acento.
+ */
+@theme {
+  --font-sans: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
+
+  /* Superficies y texto */
+  --color-crema: #faf8f5;
+  --color-papel: #ffffff;
+  --color-tinta: #1c1917;
+  --color-tinta-suave: #57534e;
+  --color-tinta-tenue: #a8a29e;
+  --color-linea: #e7e3dd;
+  --color-linea-fuerte: #d6d1c9;
+  --color-hueso: #f2eee8;
+
+  /* Acento */
+  --color-espresso: #5b3a29;
+  --color-espresso-oscuro: #47291b;
+
+  /* Estados */
+  --color-oliva: #5f6b3a;
+  --color-oliva-fondo: #eef0e4;
+  --color-ambar: #a86b16;
+  --color-ambar-fondo: #f7eedd;
+  --color-ladrillo: #a43d2b;
+  --color-ladrillo-fondo: #f6e6e1;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+
+  --ease-suave: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-crema text-tinta font-sans text-[15px] leading-relaxed;
+  }
+
+  ::selection {
+    @apply bg-espresso text-crema;
+  }
+
+  :focus-visible {
+    @apply outline-1 outline-offset-2 outline-espresso;
+  }
+}
+
+@utility cifra {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Entradas suaves para piezas de Radix (modales, menús, paneles). */
+@keyframes fundido {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes emerger {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+@keyframes deslizar {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+@utility animar-fundido {
+  animation: fundido 200ms var(--ease-suave);
+}
+@utility animar-emerger {
+  animation: emerger 220ms var(--ease-suave);
+}
+@utility animar-deslizar {
+  animation: deslizar 280ms var(--ease-suave);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

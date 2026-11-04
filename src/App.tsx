@@ -1,0 +1,59 @@
+import { MotionConfig } from 'motion/react'
+import type { ReactNode } from 'react'
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { AppLayout } from './components/layout/AppLayout'
+import { ToastProvider } from './components/ui/Toast'
+import { SesionProvider, useSesion } from './context/SesionContext'
+import { navegacion, rutaInicial } from './lib/navegacion'
+import type { Rol } from './types'
+import { EnConstruccion } from './pages/EnConstruccion'
+import { Login } from './pages/Login'
+
+/** Solo deja pasar a los roles autorizados para la ruta. */
+function Protegida({ roles, children }: { roles?: Rol[]; children: ReactNode }) {
+  const { usuario } = useSesion()
+  if (!usuario) return <Navigate to="/login" replace />
+  if (roles && !roles.includes(usuario.rol)) return <Navigate to={rutaInicial[usuario.rol]} replace />
+  return children
+}
+
+function Inicio() {
+  const { usuario } = useSesion()
+  return <Navigate to={usuario ? rutaInicial[usuario.rol] : '/login'} replace />
+}
+
+export default function App() {
+  return (
+    <MotionConfig reducedMotion="user">
+      <SesionProvider>
+        <ToastProvider>
+          <HashRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route
+                element={
+                  <Protegida>
+                    <AppLayout />
+                  </Protegida>
+                }
+              >
+                {navegacion.map(({ ruta, etiqueta, roles }) => (
+                  <Route
+                    key={ruta}
+                    path={ruta}
+                    element={
+                      <Protegida roles={roles}>
+                        <EnConstruccion titulo={etiqueta} />
+                      </Protegida>
+                    }
+                  />
+                ))}
+              </Route>
+              <Route path="*" element={<Inicio />} />
+            </Routes>
+          </HashRouter>
+        </ToastProvider>
+      </SesionProvider>
+    </MotionConfig>
+  )
+}
