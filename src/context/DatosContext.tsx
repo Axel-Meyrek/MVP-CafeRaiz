@@ -55,7 +55,11 @@ interface Datos {
   crearProducto: (admin: Usuario, nuevo: { nombre: string; categoria: Categoria; precio: number }) => Resultado
   cambiarPrecio: (admin: Usuario, productoId: string, precio: number) => Resultado
   darDeBajaProducto: (admin: Usuario, productoId: string) => Resultado
+  guardarDescuento: (admin: Usuario, datos: DatosDescuento, id?: string) => Resultado
+  cambiarEstadoDescuento: (admin: Usuario, id: string, activo: boolean) => Resultado
 }
+
+export type DatosDescuento = Omit<Descuento, 'id' | 'activo'>
 
 const DatosContext = createContext<Datos | null>(null)
 
@@ -68,7 +72,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
   const [registro, setRegistro] = useState(registroInicial)
   const [usuarios, setUsuarios] = useState(usuariosIniciales)
   const [productos, setProductos] = useState(productosIniciales)
-  const [descuentos] = useState(descuentosIniciales)
+  const [descuentos, setDescuentos] = useState(descuentosIniciales)
 
   const nombreProducto = useCallback((id: string) => productos.find((p) => p.id === id)?.nombre ?? id, [productos])
 
@@ -381,6 +385,51 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     [productos, anotar],
   )
 
+  const describir = (d: DatosDescuento) =>
+    `${d.tipo === 'porcentaje' ? `${d.valor}%` : `$${d.valor.toFixed(2)}`}${d.vigenteHasta ? ` hasta ${d.vigenteHasta}` : ' sin vencimiento'}`
+
+  // Solo el admin crea, modifica o desactiva descuentos (regla 66). Las ventas ya hechas guardan su monto.
+  const guardarDescuento = useCallback(
+    (admin: Usuario, datos: DatosDescuento, id?: string): Resultado => {
+      const negado = soloAdmin(admin)
+      if (negado) return negado
+      const nombre = datos.nombre.trim().replace(/\s+/g, ' ')
+      const valor = Math.round(datos.valor * 100) / 100
+      if (nombre.length < 2) return { ok: false, error: 'Escribe el nombre del descuento.' }
+      if (!(valor > 0)) return { ok: false, error: 'El valor debe ser mayor que cero.' }
+      if (datos.tipo === 'porcentaje' && valor > 100) return { ok: false, error: 'El porcentaje no puede pasar de 100.' }
+      if (descuentos.some((d) => d.id !== id && d.nombre.toLowerCase() === nombre.toLowerCase())) {
+        return { ok: false, error: 'Ya existe un descuento con ese nombre.' }
+      }
+      const limpio = { nombre, tipo: datos.tipo, valor, vigenteHasta: datos.vigenteHasta || null }
+      if (id) {
+        const previo = descuentos.find((d) => d.id === id)
+        if (!previo) return { ok: false, error: 'El descuento no existe.' }
+        setDescuentos((actuales) => actuales.map((d) => (d.id === id ? { ...d, ...limpio } : d)))
+        anotar(admin, 'Cambio de descuento', `${nombre}: ${describir(previo)} → ${describir(limpio)}`)
+      } else {
+        setDescuentos((actuales) => [...actuales, { id: `d-${Date.now().toString(36)}`, activo: true, ...limpio }])
+        anotar(admin, 'Alta de descuento', `${nombre} · ${describir(limpio)}`)
+      }
+      return { ok: true }
+    },
+    [descuentos, anotar],
+  )
+
+  const cambiarEstadoDescuento = useCallback(
+    (admin: Usuario, id: string, activo: boolean): Resultado => {
+      const negado = soloAdmin(admin)
+      if (negado) return negado
+      const descuento = descuentos.find((d) => d.id === id)
+      if (!descuento) return { ok: false, error: 'El descuento no existe.' }
+      if (descuento.activo === activo) return { ok: false, error: 'El descuento ya está en ese estado.' }
+      setDescuentos((actuales) => actuales.map((d) => (d.id === id ? { ...d, activo } : d)))
+      anotar(admin, activo ? 'Reactivación de descuento' : 'Desactivación de descuento', descuento.nombre)
+      return { ok: true }
+    },
+    [descuentos, anotar],
+  )
+
   const valor = useMemo(
     () => ({
       existencias,
@@ -402,6 +451,8 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       crearProducto,
       cambiarPrecio,
       darDeBajaProducto,
+      guardarDescuento,
+      cambiarEstadoDescuento,
     }),
     [
       existencias,
@@ -423,6 +474,8 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       crearProducto,
       cambiarPrecio,
       darDeBajaProducto,
+      guardarDescuento,
+      cambiarEstadoDescuento,
     ],
   )
   return <DatosContext.Provider value={valor}>{children}</DatosContext.Provider>

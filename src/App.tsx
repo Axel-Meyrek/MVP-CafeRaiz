@@ -8,6 +8,7 @@ import { SesionProvider, useSesion } from './context/SesionContext'
 import { navegacion, rutaInicial } from './lib/navegacion'
 import type { Rol } from './types'
 import { EnConstruccion } from './pages/EnConstruccion'
+import { Descuentos } from './pages/Descuentos'
 import { Inventario } from './pages/Inventario'
 import { InventarioGlobal } from './pages/InventarioGlobal'
 import { Login } from './pages/Login'
@@ -32,6 +33,7 @@ const pantallas: Record<string, ReactNode> = {
   '/general': <VistaGeneral />,
   '/inventario-global': <InventarioGlobal />,
   '/productos': <Productos />,
+  '/descuentos': <Descuentos />,
 }
 
 /** Solo deja pasar a los roles autorizados para la ruta. */
