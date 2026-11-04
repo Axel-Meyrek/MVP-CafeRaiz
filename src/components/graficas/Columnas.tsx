@@ -3,24 +3,25 @@ import { useState } from 'react'
 import { cn } from '../../lib/cn'
 import { formatoMoneda } from '../../lib/formato'
 
-export interface PuntoHora {
-  hora: number
+export interface PuntoColumna {
+  clave: string
+  /** Texto corto del eje X. Vacío para no mostrarlo. */
+  etiqueta: string
+  /** Encabezado del tooltip, por ejemplo "12:00 – 13:00" o "lun 2 nov". */
+  rango: string
   total: number
   ventas: number
-}
-
-interface BarrasPorHoraProps {
-  datos: PuntoHora[]
-  /** Hora en curso: las horas futuras se muestran vacías. */
-  horaActual: number
-  titulo: string
+  /** Periodo que aún no termina: se pinta más claro. */
+  enCurso?: boolean
+  /** Periodo futuro: sin barra ni tooltip. */
+  futuro?: boolean
 }
 
 const ALTO = 168
 
-/** Columnas finas, un solo tono, con tooltip por columna y tabla accesible. */
-export function BarrasPorHora({ datos, horaActual, titulo }: BarrasPorHoraProps) {
-  const [activa, setActiva] = useState<number | null>(null)
+/** Columnas finas de un solo tono, con tooltip por columna y tabla accesible. */
+export function Columnas({ datos, titulo }: { datos: PuntoColumna[]; titulo: string }) {
+  const [activa, setActiva] = useState<string | null>(null)
   const maximo = Math.max(...datos.map((d) => d.total), 1)
   const paso = escalaRedonda(maximo)
   const tope = Math.ceil(maximo / paso) * paso
@@ -30,7 +31,7 @@ export function BarrasPorHora({ datos, horaActual, titulo }: BarrasPorHoraProps)
     <figure>
       <div className="relative flex" style={{ height: ALTO }} onMouseLeave={() => setActiva(null)}>
         {/* Rejilla y eje Y recesivos */}
-        <div className="pointer-events-none absolute inset-0 right-0 left-12">
+        <div className="pointer-events-none absolute inset-0 left-12">
           {marcas.map((marca) => (
             <div
               key={marca}
@@ -53,17 +54,16 @@ export function BarrasPorHora({ datos, horaActual, titulo }: BarrasPorHoraProps)
 
         <div className="relative flex flex-1 items-end">
           {datos.map((punto, i) => {
-            const futura = punto.hora > horaActual
             const alto = (punto.total / tope) * 100
             return (
               <div
-                key={punto.hora}
+                key={punto.clave}
                 className="relative flex h-full flex-1 cursor-default items-end justify-center px-px"
-                onMouseEnter={() => setActiva(punto.hora)}
-                onFocus={() => setActiva(punto.hora)}
+                onMouseEnter={() => setActiva(punto.clave)}
+                onFocus={() => setActiva(punto.clave)}
                 onBlur={() => setActiva(null)}
-                tabIndex={futura ? -1 : 0}
-                aria-label={`${punto.hora}:00, ${formatoMoneda(punto.total)}, ${punto.ventas} ventas`}
+                tabIndex={punto.futuro ? -1 : 0}
+                aria-label={`${punto.rango}: ${formatoMoneda(punto.total)}, ${punto.ventas} ventas`}
               >
                 <motion.div
                   initial={{ height: 0 }}
@@ -71,12 +71,12 @@ export function BarrasPorHora({ datos, horaActual, titulo }: BarrasPorHoraProps)
                   transition={{ duration: 0.6, delay: i * 0.03, ease: [0.25, 1, 0.5, 1] }}
                   className={cn(
                     'w-full max-w-6 rounded-t-[4px] transition-opacity duration-200',
-                    punto.hora === horaActual ? 'bg-espresso/60' : 'bg-espresso',
-                    activa !== null && activa !== punto.hora && 'opacity-35',
+                    punto.enCurso ? 'bg-espresso/60' : 'bg-espresso',
+                    activa !== null && activa !== punto.clave && 'opacity-35',
                   )}
                 />
                 <AnimatePresence>
-                  {activa === punto.hora && !futura && (
+                  {activa === punto.clave && !punto.futuro && (
                     <motion.div
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -86,8 +86,8 @@ export function BarrasPorHora({ datos, horaActual, titulo }: BarrasPorHoraProps)
                       style={{ bottom: `calc(${alto}% + 10px)` }}
                     >
                       <span className="block text-crema/60">
-                        {punto.hora}:00 – {punto.hora + 1}:00
-                        {punto.hora === horaActual && ' · en curso'}
+                        {punto.rango}
+                        {punto.enCurso && ' · en curso'}
                       </span>
                       <span className="cifra block font-medium">
                         {formatoMoneda(punto.total)} · {punto.ventas} {punto.ventas === 1 ? 'venta' : 'ventas'}
@@ -104,8 +104,8 @@ export function BarrasPorHora({ datos, horaActual, titulo }: BarrasPorHoraProps)
       {/* Eje X */}
       <div className="mt-2 flex pl-12">
         {datos.map((punto) => (
-          <span key={punto.hora} className="cifra flex-1 text-center text-[11px] text-tinta-tenue">
-            {punto.hora % 2 === 1 ? punto.hora : ''}
+          <span key={punto.clave} className="cifra flex-1 truncate text-center text-[11px] text-tinta-tenue">
+            {punto.etiqueta}
           </span>
         ))}
       </div>
@@ -115,15 +115,15 @@ export function BarrasPorHora({ datos, horaActual, titulo }: BarrasPorHoraProps)
         <caption>{titulo}</caption>
         <thead>
           <tr>
-            <th>Hora</th>
+            <th>Periodo</th>
             <th>Ventas</th>
             <th>Total</th>
           </tr>
         </thead>
         <tbody>
           {datos.map((d) => (
-            <tr key={d.hora}>
-              <td>{d.hora}:00</td>
+            <tr key={d.clave}>
+              <td>{d.rango}</td>
               <td>{d.ventas}</td>
               <td>{formatoMoneda(d.total)}</td>
             </tr>

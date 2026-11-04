@@ -2,7 +2,7 @@ import { motion } from 'motion/react'
 import { ArrowUpRight, CircleCheck } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { BarrasPorHora, type PuntoHora } from '../components/graficas/BarrasPorHora'
+import { Columnas, type PuntoColumna } from '../components/graficas/Columnas'
 import { Pagina } from '../components/layout/Pagina'
 import { Badge } from '../components/ui/Badge'
 import { StatNumber } from '../components/ui/StatNumber'
@@ -34,10 +34,18 @@ export function PanelSucursal() {
 
     const horaActual = Math.floor(minutoActual / 60)
     const ultimaHora = Math.max(19, horaActual)
-    const porHora: PuntoHora[] = Array.from({ length: ultimaHora - 7 + 1 }, (_, i) => {
+    const porHora: PuntoColumna[] = Array.from({ length: ultimaHora - 7 + 1 }, (_, i) => {
       const hora = 7 + i
       const enHora = vigentes.filter((v) => Math.floor(minutoDelDia(v.fecha) / 60) === hora)
-      return { hora, total: sumar(enHora), ventas: enHora.length }
+      return {
+        clave: String(hora),
+        etiqueta: hora % 2 === 1 ? String(hora) : '',
+        rango: `${hora}:00 – ${hora + 1}:00`,
+        total: sumar(enHora),
+        ventas: enHora.length,
+        enCurso: hora === horaActual,
+        futuro: hora > horaActual,
+      }
     })
 
     const unidades = new Map<string, { cantidad: number; ingreso: number }>()
@@ -61,7 +69,6 @@ export function PanelSucursal() {
       canceladas: hoy.length - vigentes.length,
       montoCancelado: sumar(hoy.filter((v) => v.cancelacion)),
       totalAyer: sumar(ayerALaHora),
-      horaActual,
       porHora,
       masVendidos,
     }
@@ -112,7 +119,7 @@ export function PanelSucursal() {
 
       <div className="mt-12 grid gap-12 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-16">
         <Bloque titulo="Ventas por hora" retraso={0.05}>
-          <BarrasPorHora datos={resumen.porHora} horaActual={resumen.horaActual} titulo="Ventas por hora de hoy" />
+          <Columnas datos={resumen.porHora} titulo="Ventas por hora de hoy" />
         </Bloque>
 
         <Bloque
