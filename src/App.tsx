@@ -8,6 +8,7 @@ import { SesionProvider, useSesion } from './context/SesionContext'
 import { navegacion, rutaInicial } from './lib/navegacion'
 import type { Rol } from './types'
 import { EnConstruccion } from './pages/EnConstruccion'
+import { Inventario } from './pages/Inventario'
 import { Login } from './pages/Login'
 import { MisVentas } from './pages/MisVentas'
 import { PuntoDeVenta } from './pages/PuntoDeVenta'
@@ -16,6 +17,7 @@ import { PuntoDeVenta } from './pages/PuntoDeVenta'
 const pantallas: Record<string, ReactNode> = {
   '/venta': <PuntoDeVenta />,
   '/mis-ventas': <MisVentas />,
+  '/inventario': <Inventario />,
 }
 
 /** Solo deja pasar a los roles autorizados para la ruta. */

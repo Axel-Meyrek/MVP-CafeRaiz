@@ -106,20 +106,20 @@ export function AppLayout() {
         </main>
 
         {/* Navegación inferior (móvil) */}
-        <nav className="fixed inset-x-0 bottom-0 z-30 flex overflow-x-auto border-t border-linea bg-crema/95 backdrop-blur-sm md:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-linea bg-crema/95 backdrop-blur-sm md:hidden">
           {elementos.map(({ ruta, etiqueta, icono: Icono }) => (
             <NavLink
               key={ruta}
               to={ruta}
               className={({ isActive }) =>
                 cn(
-                  'flex min-w-[4.5rem] flex-1 flex-col items-center gap-1 py-2.5 text-[11px] transition-colors',
+                  'flex min-w-0 flex-1 flex-col items-center gap-1 py-2.5 text-[10.5px] transition-colors',
                   isActive ? 'text-espresso' : 'text-tinta-tenue',
                 )
               }
             >
               <Icono size={18} strokeWidth={1.5} />
-              {etiqueta}
+              <span className="max-w-full truncate px-0.5">{etiqueta}</span>
             </NavLink>
           ))}
         </nav>
