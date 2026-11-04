@@ -10,7 +10,6 @@ import { TarjetaProducto } from '../components/venta/TarjetaProducto'
 import { Ticket, type LineaTicket } from '../components/venta/Ticket'
 import { useDatos } from '../context/DatosContext'
 import { useSesion } from '../context/SesionContext'
-import { descuentos, productos } from '../data/catalogo'
 import { formatoMoneda } from '../lib/formato'
 import { calcularDescuento, descuentoVigente, estadoExistencia } from '../lib/reglas'
 import type { Categoria, MetodoPago } from '../types'
@@ -19,7 +18,7 @@ const categorias: Array<Categoria | 'Todo'> = ['Todo', 'Café caliente', 'Café 
 
 export function PuntoDeVenta() {
   const { usuario, sucursal } = useSesion()
-  const { existenciaDe, registrarVenta } = useDatos()
+  const { existenciaDe, registrarVenta, productos, descuentos } = useDatos()
   const avisar = useAviso()
 
   const [categoria, setCategoria] = useState<string>('Todo')
@@ -48,7 +47,7 @@ export function PuntoDeVenta() {
         }
       })
       .sort((a, b) => Number(a.estado === 'agotado') - Number(b.estado === 'agotado'))
-  }, [busqueda, categoria, existenciaDe, sucursalId])
+  }, [busqueda, categoria, existenciaDe, sucursalId, productos])
 
   const lineas: LineaTicket[] = Object.entries(cantidades).map(([productoId, cantidad]) => ({
     producto: productos.find((p) => p.id === productoId)!,

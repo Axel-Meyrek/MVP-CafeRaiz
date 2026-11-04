@@ -21,12 +21,12 @@ const porcentaje = (parte: number, total: number) => (total ? Math.round((parte 
 
 export function ReporteSucursal() {
   const { sucursal } = useSesion()
-  const { ventas, usuarios } = useDatos()
+  const { ventas, usuarios, productos } = useDatos()
   const [rango, setRango] = useState<RangoFechas>(rangoInicial)
   const sucursalId = sucursal?.id ?? ''
 
   // El gerente solo genera reportes de su propia sucursal (regla 75).
-  const reporte = useMemo(() => calcularReporte(ventas, sucursalId, rango), [ventas, sucursalId, rango])
+  const reporte = useMemo(() => calcularReporte(ventas, productos, sucursalId, rango), [ventas, productos, sucursalId, rango])
   // Las ventas están en orden cronológico: la primera marca el inicio de los datos.
   const primerDia = useMemo(() => (ventas[0] ? claveDia(ventas[0].fecha) : rango.desde), [ventas, rango.desde])
 

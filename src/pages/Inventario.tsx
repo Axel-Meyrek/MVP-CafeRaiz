@@ -11,7 +11,6 @@ import { Tabs } from '../components/ui/Tabs'
 import { useAviso } from '../components/ui/Toast'
 import { useDatos, type Resultado } from '../context/DatosContext'
 import { useSesion } from '../context/SesionContext'
-import { productos } from '../data/catalogo'
 import { cn } from '../lib/cn'
 import { estadoExistencia } from '../lib/reglas'
 import type { Existencia, Producto } from '../types'
@@ -35,6 +34,7 @@ const avisos: Record<AccionInventario, string> = {
 export function Inventario() {
   const { usuario, sucursal } = useSesion()
   const datos = useDatos()
+  const { productos } = datos
   const avisar = useAviso()
   const [filtro, setFiltro] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
@@ -52,7 +52,7 @@ export function Inventario() {
           const existencia = datos.existenciaDe(sucursalId, producto.id)
           return existencia ? [{ producto, existencia, estado: estadoExistencia(existencia) }] : []
         }),
-    [datos, sucursalId],
+    [datos, productos, sucursalId],
   )
 
   const conteo = {

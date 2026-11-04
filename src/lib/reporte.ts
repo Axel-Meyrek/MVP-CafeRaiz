@@ -1,4 +1,3 @@
-import { productos } from '../data/catalogo'
 import type { MetodoPago, Producto, Venta } from '../types'
 import { claveDia, minutoDelDia } from './formato'
 
@@ -49,7 +48,12 @@ export function diasEntre(rango: RangoFechas) {
  * Reporte de ventas de una sucursal en un rango de fechas.
  * Las ventas canceladas no cuentan en ingresos ni en productos (regla 65); se reportan aparte.
  */
-export function calcularReporte(ventas: Venta[], sucursalId: string, rango: RangoFechas): Reporte {
+export function calcularReporte(
+  ventas: Venta[],
+  productos: Producto[],
+  sucursalId: string,
+  rango: RangoFechas,
+): Reporte {
   const delRango = ventas.filter((v) => v.sucursalId === sucursalId && enRango(v, rango))
   const vigentes = delRango.filter((v) => !v.cancelacion)
   const canceladas = delRango.filter((v) => v.cancelacion)

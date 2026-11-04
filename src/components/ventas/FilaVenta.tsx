@@ -2,14 +2,12 @@ import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useDatos } from '../../context/DatosContext'
-import { descuentos, productos } from '../../data/catalogo'
 import { cn } from '../../lib/cn'
 import { formatoFecha, formatoHora, formatoMoneda } from '../../lib/formato'
 import type { Venta } from '../../types'
 import { Badge } from '../ui/Badge'
 
 const suave = [0.25, 1, 0.5, 1] as const
-const nombreProducto = (id: string) => productos.find((p) => p.id === id)?.nombre ?? 'Producto'
 const nombreMetodo = { efectivo: 'Efectivo', tarjeta: 'Tarjeta' } as const
 
 interface FilaVentaProps {
@@ -25,13 +23,14 @@ interface FilaVentaProps {
 }
 
 export function FilaVenta({ venta, abierta, alAlternar, mostrarVendedor, mostrarFecha, pie }: FilaVentaProps) {
+  const { usuarios, productos, descuentos } = useDatos()
+  const nombreProducto = (id: string) => productos.find((p) => p.id === id)?.nombre ?? 'Producto'
   const cancelada = !!venta.cancelacion
   const resumen = venta.lineas
     .map((l) => (l.cantidad > 1 ? `${l.cantidad} ${nombreProducto(l.productoId)}` : nombreProducto(l.productoId)))
     .join(', ')
   const subtotal = venta.lineas.reduce((suma, l) => suma + l.cantidad * l.precioUnitario, 0)
   const descuento = descuentos.find((d) => d.id === venta.descuentoId)
-  const { usuarios } = useDatos()
   const vendedor = usuarios.find((u) => u.id === venta.usuarioId)?.nombre
 
   return (

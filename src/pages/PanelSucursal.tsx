@@ -8,7 +8,6 @@ import { Badge } from '../components/ui/Badge'
 import { StatNumber } from '../components/ui/StatNumber'
 import { useDatos } from '../context/DatosContext'
 import { useSesion } from '../context/SesionContext'
-import { productos } from '../data/catalogo'
 import { cn } from '../lib/cn'
 import { esAyer, esHoy, formatoFechaLarga, formatoMoneda, minutoDelDia } from '../lib/formato'
 import { estadoExistencia } from '../lib/reglas'
@@ -18,7 +17,7 @@ const sumar = (lista: { total: number }[]) => lista.reduce((suma, v) => suma + v
 
 export function PanelSucursal() {
   const { sucursal } = useSesion()
-  const { ventas, existencias } = useDatos()
+  const { ventas, existencias, productos } = useDatos()
   const [ahora] = useState(() => new Date())
   const sucursalId = sucursal?.id ?? ''
 
@@ -72,7 +71,7 @@ export function PanelSucursal() {
       porHora,
       masVendidos,
     }
-  }, [ventas, sucursalId, ahora])
+  }, [ventas, productos, sucursalId, ahora])
 
   const atencion = productos
     .filter((p) => p.activo)

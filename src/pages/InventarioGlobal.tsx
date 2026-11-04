@@ -7,7 +7,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Select } from '../components/ui/Select'
 import { Tabs } from '../components/ui/Tabs'
 import { useDatos } from '../context/DatosContext'
-import { productos, sucursales } from '../data/catalogo'
+import { sucursales } from '../data/catalogo'
 import { cn } from '../lib/cn'
 import { estadoExistencia, type EstadoExistencia } from '../lib/reglas'
 import type { Existencia, Producto } from '../types'
@@ -37,7 +37,7 @@ const estilos: Record<EstadoExistencia | 'manual', { celda: string; punto: strin
 }
 
 export function InventarioGlobal() {
-  const { existencias, usuarios } = useDatos()
+  const { existencias, usuarios, productos } = useDatos()
   const [vista, setVista] = useState('todos')
   const [categoria, setCategoria] = useState('todas')
   const [busqueda, setBusqueda] = useState('')
@@ -70,7 +70,7 @@ export function InventarioGlobal() {
               faltantes > 0 && mayor?.c ? { nombre: mayor.s.nombre, cantidad: mayor.c.existencia.cantidad } : null,
           }
         }),
-    [existencias, activas],
+    [existencias, productos, activas],
   )
 
   const termino = busqueda.trim().toLowerCase()

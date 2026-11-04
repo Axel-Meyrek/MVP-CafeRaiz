@@ -1,5 +1,10 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
-import { descuentos, productos, usuarios as usuariosIniciales } from '../data/catalogo'
+import {
+  descuentos as descuentosIniciales,
+  productos as productosIniciales,
+  sucursales,
+  usuarios as usuariosIniciales,
+} from '../data/catalogo'
 import {
   existencias as existenciasIniciales,
   registroAcciones as registroInicial,
@@ -7,7 +12,17 @@ import {
 } from '../data/movimientos'
 import { esHoy } from '../lib/formato'
 import { calcularDescuento, descuentoVigente, estaDisponible } from '../lib/reglas'
-import type { Existencia, LineaVenta, MetodoPago, RegistroAccion, Usuario, Venta } from '../types'
+import type {
+  Categoria,
+  Descuento,
+  Existencia,
+  LineaVenta,
+  MetodoPago,
+  Producto,
+  RegistroAccion,
+  Usuario,
+  Venta,
+} from '../types'
 
 export interface NuevaVenta {
   sucursalId: string
@@ -35,11 +50,15 @@ interface Datos {
   usuarios: Usuario[]
   crearBarista: (gerente: Usuario, nombre: string) => Resultado
   desactivarBarista: (gerente: Usuario, baristaId: string) => Resultado
+  productos: Producto[]
+  descuentos: Descuento[]
+  crearProducto: (admin: Usuario, nuevo: { nombre: string; categoria: Categoria; precio: number }) => Resultado
+  cambiarPrecio: (admin: Usuario, productoId: string, precio: number) => Resultado
+  darDeBajaProducto: (admin: Usuario, productoId: string) => Resultado
 }
 
 const DatosContext = createContext<Datos | null>(null)
 
-const nombreProducto = (id: string) => productos.find((p) => p.id === id)?.nombre ?? id
 const esEntero = (n: number) => Number.isInteger(n) && n >= 0
 
 /** Almacén en memoria que sustituye al backend mientras construimos la interfaz. */
@@ -48,6 +67,10 @@ export function DatosProvider({ children }: { children: ReactNode }) {
   const [ventas, setVentas] = useState(ventasIniciales)
   const [registro, setRegistro] = useState(registroInicial)
   const [usuarios, setUsuarios] = useState(usuariosIniciales)
+  const [productos, setProductos] = useState(productosIniciales)
+  const [descuentos] = useState(descuentosIniciales)
+
+  const nombreProducto = useCallback((id: string) => productos.find((p) => p.id === id)?.nombre ?? id, [productos])
 
   const existenciaDe = useCallback(
     (sucursalId: string, productoId: string) =>
@@ -141,7 +164,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       )
       return { ok: true, venta }
     },
-    [existencias, ventas],
+    [existencias, ventas, productos, descuentos],
   )
 
   // Barista o gerente; requiere motivo y no cambia la existencia (reglas 44 a 47).
@@ -156,7 +179,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       if (resultado.ok) anotar(usuario, 'Agotado manual', `${nombreProducto(productoId)} · ${limpio}`)
       return resultado
     },
-    [modificar, anotar],
+    [modificar, anotar, nombreProducto],
   )
 
   // Solo el gerente quita la marca puesta a mano (regla 48).
@@ -168,7 +191,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       if (resultado.ok) anotar(usuario, 'Agotado manual retirado', nombreProducto(productoId))
       return resultado
     },
-    [modificar, anotar],
+    [modificar, anotar, nombreProducto],
   )
 
   const registrarEntrada = useCallback(
@@ -183,7 +206,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       }
       return resultado
     },
-    [modificar, anotar],
+    [modificar, anotar, nombreProducto],
   )
 
   // La existencia nunca es negativa y toda corrección lleva motivo (reglas 21 y 37).
@@ -201,7 +224,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       }
       return resultado
     },
-    [modificar, anotar],
+    [modificar, anotar, nombreProducto],
   )
 
   const cambiarLimite = useCallback(
@@ -216,7 +239,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       }
       return resultado
     },
-    [modificar, anotar],
+    [modificar, anotar, nombreProducto],
   )
 
   // Solo el gerente de la sucursal, el mismo día, con motivo; devuelve las unidades (reglas 61 a 64).
@@ -289,6 +312,75 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     [usuarios, anotar],
   )
 
+  // Catálogo y precios: únicamente el admin general (reglas 29 a 31).
+  const soloAdmin = (usuario: Usuario): Resultado | null =>
+    usuario.rol === 'admin' ? null : { ok: false, error: 'Solo el admin general puede modificar el catálogo.' }
+
+  const crearProducto = useCallback(
+    (admin: Usuario, nuevo: { nombre: string; categoria: Categoria; precio: number }): Resultado => {
+      const negado = soloAdmin(admin)
+      if (negado) return negado
+      const nombre = nuevo.nombre.trim().replace(/\s+/g, ' ')
+      const precio = Math.round(nuevo.precio * 100) / 100
+      if (nombre.length < 2) return { ok: false, error: 'Escribe el nombre del producto.' }
+      if (!(precio > 0)) return { ok: false, error: 'El precio debe ser mayor que cero.' }
+      if (productos.some((p) => p.nombre.toLowerCase() === nombre.toLowerCase())) {
+        return { ok: false, error: 'Ya existe un producto con ese nombre.' }
+      }
+      const id = `${nombre
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '')}-${Date.now().toString(36)}`
+
+      setProductos((actuales) => [...actuales, { id, nombre, categoria: nuevo.categoria, precio, activo: true }])
+      // Un producto nuevo empieza con existencia cero en todas las sucursales (regla 40).
+      setExistencias((actuales) => [
+        ...actuales,
+        ...sucursales
+          .filter((s) => s.activa)
+          .map((s) => ({ productoId: id, sucursalId: s.id, cantidad: 0, limiteStockBajo: 5, agotadoManual: null })),
+      ])
+      anotar(admin, 'Alta de producto', `${nombre} · ${nuevo.categoria} · $${precio.toFixed(2)}`)
+      return { ok: true }
+    },
+    [productos, anotar],
+  )
+
+  // El cambio de precio solo afecta ventas nuevas y queda registrado (reglas 34 y 78).
+  const cambiarPrecio = useCallback(
+    (admin: Usuario, productoId: string, precio: number): Resultado => {
+      const negado = soloAdmin(admin)
+      if (negado) return negado
+      const producto = productos.find((p) => p.id === productoId)
+      const nuevo = Math.round(precio * 100) / 100
+      if (!producto) return { ok: false, error: 'El producto no existe.' }
+      if (!producto.activo) return { ok: false, error: 'El producto está dado de baja.' }
+      if (!(nuevo > 0)) return { ok: false, error: 'El precio debe ser mayor que cero.' }
+      if (nuevo === producto.precio) return { ok: false, error: 'El precio es igual al actual.' }
+      setProductos((actuales) => actuales.map((p) => (p.id === productoId ? { ...p, precio: nuevo } : p)))
+      anotar(admin, 'Cambio de precio', `${producto.nombre}: $${producto.precio.toFixed(2)} → $${nuevo.toFixed(2)}`)
+      return { ok: true }
+    },
+    [productos, anotar],
+  )
+
+  // La baja es lógica: deja de venderse en todas las sucursales y conserva su historial (reglas 32 y 33).
+  const darDeBajaProducto = useCallback(
+    (admin: Usuario, productoId: string): Resultado => {
+      const negado = soloAdmin(admin)
+      if (negado) return negado
+      const producto = productos.find((p) => p.id === productoId)
+      if (!producto) return { ok: false, error: 'El producto no existe.' }
+      if (!producto.activo) return { ok: false, error: 'El producto ya está dado de baja.' }
+      setProductos((actuales) => actuales.map((p) => (p.id === productoId ? { ...p, activo: false } : p)))
+      anotar(admin, 'Baja de producto', producto.nombre)
+      return { ok: true }
+    },
+    [productos, anotar],
+  )
+
   const valor = useMemo(
     () => ({
       existencias,
@@ -305,6 +397,11 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       usuarios,
       crearBarista,
       desactivarBarista,
+      productos,
+      descuentos,
+      crearProducto,
+      cambiarPrecio,
+      darDeBajaProducto,
     }),
     [
       existencias,
@@ -321,6 +418,11 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       usuarios,
       crearBarista,
       desactivarBarista,
+      productos,
+      descuentos,
+      crearProducto,
+      cambiarPrecio,
+      darDeBajaProducto,
     ],
   )
   return <DatosContext.Provider value={valor}>{children}</DatosContext.Provider>
