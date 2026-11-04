@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import {
   descuentos as descuentosIniciales,
   productos as productosIniciales,
-  sucursales,
+  sucursales as sucursalesIniciales,
   usuarios as usuariosIniciales,
 } from '../data/catalogo'
 import {
@@ -20,6 +20,7 @@ import type {
   MetodoPago,
   Producto,
   RegistroAccion,
+  Sucursal,
   Usuario,
   Venta,
 } from '../types'
@@ -57,6 +58,11 @@ interface Datos {
   darDeBajaProducto: (admin: Usuario, productoId: string) => Resultado
   guardarDescuento: (admin: Usuario, datos: DatosDescuento, id?: string) => Resultado
   cambiarEstadoDescuento: (admin: Usuario, id: string, activo: boolean) => Resultado
+  sucursales: Sucursal[]
+  altaSucursal: (admin: Usuario, nombre: string, zona: string) => Resultado
+  bajaSucursal: (admin: Usuario, sucursalId: string) => Resultado
+  crearGerente: (admin: Usuario, nombre: string, sucursalId: string) => Resultado
+  desactivarGerente: (admin: Usuario, gerenteId: string) => Resultado
 }
 
 export type DatosDescuento = Omit<Descuento, 'id' | 'activo'>
@@ -73,6 +79,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
   const [usuarios, setUsuarios] = useState(usuariosIniciales)
   const [productos, setProductos] = useState(productosIniciales)
   const [descuentos, setDescuentos] = useState(descuentosIniciales)
+  const [sucursales, setSucursales] = useState(sucursalesIniciales)
 
   const nombreProducto = useCallback((id: string) => productos.find((p) => p.id === id)?.nombre ?? id, [productos])
 
@@ -120,6 +127,9 @@ export function DatosProvider({ children }: { children: ReactNode }) {
   const registrarVenta = useCallback(
     (nueva: NuevaVenta): ResultadoVenta => {
       if (nueva.lineas.length === 0) return { ok: false, error: 'El ticket está vacío.' }
+      if (!sucursales.find((s) => s.id === nueva.sucursalId)?.activa) {
+        return { ok: false, error: 'La sucursal está dada de baja.' }
+      }
 
       const lineas: LineaVenta[] = []
       for (const linea of nueva.lineas) {
@@ -168,7 +178,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       )
       return { ok: true, venta }
     },
-    [existencias, ventas, productos, descuentos],
+    [existencias, ventas, productos, descuentos, sucursales],
   )
 
   // Barista o gerente; requiere motivo y no cambia la existencia (reglas 44 a 47).
@@ -349,7 +359,7 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       anotar(admin, 'Alta de producto', `${nombre} · ${nuevo.categoria} · $${precio.toFixed(2)}`)
       return { ok: true }
     },
-    [productos, anotar],
+    [productos, sucursales, anotar],
   )
 
   // El cambio de precio solo afecta ventas nuevas y queda registrado (reglas 34 y 78).
@@ -430,6 +440,89 @@ export function DatosProvider({ children }: { children: ReactNode }) {
     [descuentos, anotar],
   )
 
+  const limpiar = (texto: string) => texto.trim().replace(/\s+/g, ' ')
+
+  // Solo el admin da de alta o de baja sucursales (regla 6).
+  const altaSucursal = useCallback(
+    (admin: Usuario, nombre: string, zona: string): Resultado => {
+      if (admin.rol !== 'admin') return { ok: false, error: 'Solo el admin general puede dar de alta sucursales.' }
+      const n = limpiar(nombre)
+      const z = limpiar(zona)
+      if (n.length < 2) return { ok: false, error: 'Escribe el nombre de la sucursal.' }
+      if (z.length < 2) return { ok: false, error: 'Escribe la zona o colonia.' }
+      if (sucursales.some((s) => s.nombre.toLowerCase() === n.toLowerCase())) {
+        return { ok: false, error: 'Ya existe una sucursal con ese nombre.' }
+      }
+      const id = `s-${Date.now().toString(36)}`
+      setSucursales((actuales) => [...actuales, { id, nombre: n, zona: z, activa: true }])
+      // Inventario propio desde cero con todo el catálogo activo (reglas 5 y 40).
+      setExistencias((actuales) => [
+        ...actuales,
+        ...productos
+          .filter((p) => p.activo)
+          .map((p) => ({ productoId: p.id, sucursalId: id, cantidad: 0, limiteStockBajo: 5, agotadoManual: null })),
+      ])
+      anotar(admin, 'Alta de sucursal', `${n} · ${z}`)
+      return { ok: true }
+    },
+    [sucursales, productos, anotar],
+  )
+
+  // La baja conserva ventas e inventario para los reportes; su personal ya no puede entrar.
+  const bajaSucursal = useCallback(
+    (admin: Usuario, sucursalId: string): Resultado => {
+      if (admin.rol !== 'admin') return { ok: false, error: 'Solo el admin general puede dar de baja sucursales.' }
+      const sucursal = sucursales.find((s) => s.id === sucursalId)
+      if (!sucursal) return { ok: false, error: 'La sucursal no existe.' }
+      if (!sucursal.activa) return { ok: false, error: 'La sucursal ya está dada de baja.' }
+      if (sucursales.filter((s) => s.activa).length === 1) {
+        return { ok: false, error: 'Debe quedar al menos una sucursal activa.' }
+      }
+      setSucursales((actuales) => actuales.map((s) => (s.id === sucursalId ? { ...s, activa: false } : s)))
+      anotar(admin, 'Baja de sucursal', sucursal.nombre)
+      return { ok: true }
+    },
+    [sucursales, anotar],
+  )
+
+  // Solo el admin crea o desactiva gerentes; cada gerente pertenece a una sola sucursal (reglas 8 y 10).
+  const crearGerente = useCallback(
+    (admin: Usuario, nombre: string, sucursalId: string): Resultado => {
+      if (admin.rol !== 'admin') return { ok: false, error: 'Solo el admin general puede crear gerentes.' }
+      const n = limpiar(nombre)
+      const sucursal = sucursales.find((s) => s.id === sucursalId)
+      if (n.length < 3) return { ok: false, error: 'Escribe el nombre completo.' }
+      if (!sucursal?.activa) return { ok: false, error: 'Elige una sucursal activa.' }
+      if (usuarios.some((u) => u.rol === 'gerente' && u.activo && u.sucursalId === sucursalId)) {
+        return { ok: false, error: `${sucursal.nombre} ya tiene gerente. Desactívalo primero para reemplazarlo.` }
+      }
+      if (usuarios.some((u) => u.activo && u.nombre.toLowerCase() === n.toLowerCase())) {
+        return { ok: false, error: 'Ya existe una persona activa con ese nombre.' }
+      }
+      setUsuarios((actuales) => [
+        ...actuales,
+        { id: `u-g-${sucursalId}-${Date.now()}`, nombre: n, rol: 'gerente', sucursalId, activo: true },
+      ])
+      anotar(admin, 'Alta de gerente', `${n} · ${sucursal.nombre}`)
+      return { ok: true }
+    },
+    [sucursales, usuarios, anotar],
+  )
+
+  const desactivarGerente = useCallback(
+    (admin: Usuario, gerenteId: string): Resultado => {
+      if (admin.rol !== 'admin') return { ok: false, error: 'Solo el admin general puede desactivar gerentes.' }
+      const gerente = usuarios.find((u) => u.id === gerenteId)
+      if (!gerente || gerente.rol !== 'gerente') return { ok: false, error: 'La persona no es gerente.' }
+      if (!gerente.activo) return { ok: false, error: 'Ya está desactivado.' }
+      setUsuarios((actuales) => actuales.map((u) => (u.id === gerenteId ? { ...u, activo: false } : u)))
+      const sucursal = sucursales.find((s) => s.id === gerente.sucursalId)
+      anotar(admin, 'Desactivación de gerente', `${gerente.nombre} · ${sucursal?.nombre ?? ''}`)
+      return { ok: true }
+    },
+    [sucursales, usuarios, anotar],
+  )
+
   const valor = useMemo(
     () => ({
       existencias,
@@ -453,6 +546,11 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       darDeBajaProducto,
       guardarDescuento,
       cambiarEstadoDescuento,
+      sucursales,
+      altaSucursal,
+      bajaSucursal,
+      crearGerente,
+      desactivarGerente,
     }),
     [
       existencias,
@@ -476,6 +574,11 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       darDeBajaProducto,
       guardarDescuento,
       cambiarEstadoDescuento,
+      sucursales,
+      altaSucursal,
+      bajaSucursal,
+      crearGerente,
+      desactivarGerente,
     ],
   )
   return <DatosContext.Provider value={valor}>{children}</DatosContext.Provider>

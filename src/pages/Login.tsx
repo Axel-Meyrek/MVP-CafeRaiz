@@ -7,7 +7,6 @@ import { Button } from '../components/ui/Button'
 import { Tabs } from '../components/ui/Tabs'
 import { useSesion } from '../context/SesionContext'
 import { useDatos } from '../context/DatosContext'
-import { sucursales } from '../data/catalogo'
 import { cn } from '../lib/cn'
 import { iniciales } from '../lib/formato'
 import { rutaInicial } from '../lib/navegacion'
@@ -19,20 +18,22 @@ const opcionesRol: { valor: Rol; etiqueta: string }[] = [
   { valor: 'barista', etiqueta: 'Barista' },
 ]
 
-const nombreSucursal = (id: string | null) => sucursales.find((s) => s.id === id)?.nombre ?? 'Todas las sucursales'
-
 const suave = [0.25, 1, 0.5, 1] as const
 
 export function Login() {
   const { usuario, iniciarSesion } = useSesion()
-  const { usuarios } = useDatos()
+  const { usuarios, sucursales } = useDatos()
+  const nombreSucursal = (id: string | null) => sucursales.find((s) => s.id === id)?.nombre ?? 'Todas las sucursales'
+  const sucursalActiva = (id: string | null) => id === null || !!sucursales.find((s) => s.id === id)?.activa
   const navegar = useNavigate()
   const [rol, setRol] = useState<Rol>('barista')
   const [seleccionado, setSeleccionado] = useState<string | null>(null)
 
   if (usuario) return <Navigate to={rutaInicial[usuario.rol]} replace />
 
-  const disponibles = usuarios.filter((u) => u.rol === rol)
+  // Primero quien puede entrar; los desactivados se conservan al final (reglas 12 y 13).
+  const puede = (u: (typeof usuarios)[number]) => u.activo && sucursalActiva(u.sucursalId)
+  const disponibles = usuarios.filter((u) => u.rol === rol).sort((a, b) => Number(puede(b)) - Number(puede(a)))
 
   const cambiarRol = (valor: string) => {
     setRol(valor as Rol)
@@ -80,7 +81,7 @@ export function Login() {
         </div>
 
         <ul className="hidden flex-wrap gap-x-5 gap-y-1 text-[13px] text-tinta-tenue md:flex">
-          {sucursales.map((s) => (
+          {sucursales.filter((s) => s.activa).map((s) => (
             <li key={s.id}>{s.nombre}</li>
           ))}
         </ul>
@@ -115,36 +116,37 @@ export function Login() {
               >
                 {disponibles.map((persona) => {
                   const activo = persona.id === seleccionado
+                  const habilitado = puede(persona)
                   return (
                     <li key={persona.id}>
                       <button
                         type="button"
                         role="radio"
                         aria-checked={activo}
-                        disabled={!persona.activo}
+                        disabled={!habilitado}
                         onClick={() => setSeleccionado(persona.id)}
                         className={cn(
                           'group flex w-full items-center gap-3 border-b border-linea py-3 text-left transition-colors duration-200',
                           'disabled:cursor-not-allowed',
-                          persona.activo && 'hover:border-linea-fuerte',
+                          habilitado && 'hover:border-linea-fuerte',
                         )}
                       >
                         <span
                           className={cn(
                             'grid size-9 shrink-0 place-items-center rounded-full text-xs font-medium transition-colors duration-200',
                             activo ? 'bg-espresso text-crema' : 'bg-hueso text-tinta-suave',
-                            !persona.activo && 'opacity-50',
+                            !habilitado && 'opacity-50',
                           )}
                         >
                           {iniciales(persona.nombre)}
                         </span>
-                        <span className={cn('min-w-0 flex-1', !persona.activo && 'opacity-50')}>
+                        <span className={cn('min-w-0 flex-1', !habilitado && 'opacity-50')}>
                           <span className="block truncate text-sm font-medium">{persona.nombre}</span>
                           <span className="block truncate text-xs text-tinta-tenue">
                             {nombreSucursal(persona.sucursalId)}
                           </span>
                         </span>
-                        {persona.activo ? (
+                        {habilitado ? (
                           <span
                             className={cn(
                               'grid size-5 place-items-center rounded-full border transition-all duration-200',
@@ -158,7 +160,7 @@ export function Login() {
                             />
                           </span>
                         ) : (
-                          <span className="text-xs text-tinta-tenue">Desactivado</span>
+                          <span className="text-xs text-tinta-tenue">{persona.activo ? 'Sucursal de baja' : 'Desactivado'}</span>
                         )}
                       </button>
                     </li>

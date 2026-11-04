@@ -16,6 +16,7 @@ import { MisVentas } from './pages/MisVentas'
 import { PanelSucursal } from './pages/PanelSucursal'
 import { Personal } from './pages/Personal'
 import { Productos } from './pages/Productos'
+import { Sucursales } from './pages/Sucursales'
 import { PuntoDeVenta } from './pages/PuntoDeVenta'
 import { ReporteSucursal } from './pages/ReporteSucursal'
 import { VentasSucursal } from './pages/VentasSucursal'
@@ -34,6 +35,7 @@ const pantallas: Record<string, ReactNode> = {
   '/inventario-global': <InventarioGlobal />,
   '/productos': <Productos />,
   '/descuentos': <Descuentos />,
+  '/sucursales': <Sucursales />,
 }
 
 /** Solo deja pasar a los roles autorizados para la ruta. */

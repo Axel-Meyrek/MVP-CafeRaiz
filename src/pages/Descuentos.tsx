@@ -182,7 +182,7 @@ export function Descuentos() {
         descripcion={
           dialogo?.tipo === 'editar'
             ? 'Las ventas ya registradas conservan el descuento que tenían.'
-            : 'Estará disponible en caja en las 5 sucursales.'
+            : 'Estará disponible en caja en todas las sucursales.'
         }
       >
         {(dialogo?.tipo === 'nuevo' || dialogo?.tipo === 'editar') && (

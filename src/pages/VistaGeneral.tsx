@@ -6,7 +6,6 @@ import { Pagina } from '../components/layout/Pagina'
 import { Badge } from '../components/ui/Badge'
 import { StatNumber } from '../components/ui/StatNumber'
 import { useDatos } from '../context/DatosContext'
-import { sucursales } from '../data/catalogo'
 import { cn } from '../lib/cn'
 import { claveDia, esAyer, formatoFechaLarga, formatoMoneda, minutoDelDia } from '../lib/formato'
 import { estadoExistencia } from '../lib/reglas'
@@ -15,7 +14,7 @@ import { calcularReporte } from '../lib/reporte'
 const suave = [0.25, 1, 0.5, 1] as const
 
 export function VistaGeneral() {
-  const { ventas, existencias, productos } = useDatos()
+  const { ventas, existencias, productos, sucursales } = useDatos()
   const [ahora] = useState(() => new Date())
 
   // El admin ve ventas e inventario de todas las sucursales, solo lectura (reglas 14, 15 y 17).
@@ -57,7 +56,7 @@ export function VistaGeneral() {
         }
       })
       .sort((a, b) => b.reporte.ingresos - a.reporte.ingresos)
-  }, [ventas, existencias, productos, ahora])
+  }, [ventas, existencias, productos, sucursales, ahora])
 
   const total = filas.reduce((suma, f) => suma + f.reporte.ingresos, 0)
   const numeroVentas = filas.reduce((suma, f) => suma + f.reporte.ventas, 0)

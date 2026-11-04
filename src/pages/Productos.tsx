@@ -12,7 +12,6 @@ import { Tabs } from '../components/ui/Tabs'
 import { useAviso } from '../components/ui/Toast'
 import { useDatos, type Resultado } from '../context/DatosContext'
 import { useSesion } from '../context/SesionContext'
-import { sucursales } from '../data/catalogo'
 import { cn } from '../lib/cn'
 import { claveDia, formatoFecha, formatoMoneda } from '../lib/formato'
 import type { Categoria, Producto } from '../types'
@@ -24,7 +23,7 @@ type Dialogo = { tipo: 'nuevo' } | { tipo: 'precio'; producto: Producto } | { ti
 
 export function Productos() {
   const { usuario } = useSesion()
-  const { productos, ventas, existencias, registro, crearProducto, cambiarPrecio, darDeBajaProducto } = useDatos()
+  const { productos, ventas, existencias, registro, sucursales, crearProducto, cambiarPrecio, darDeBajaProducto } = useDatos()
   const avisar = useAviso()
   const [vista, setVista] = useState('activos')
   const [categoria, setCategoria] = useState('todas')
@@ -69,7 +68,7 @@ export function Productos() {
   return (
     <Pagina
       titulo="Productos"
-      descripcion={`Catálogo único para las ${sucursales.length} sucursales · ${activos.length} a la venta`}
+      descripcion={`Catálogo único para las ${sucursales.filter((s) => s.activa).length} sucursales · ${activos.length} a la venta`}
       acciones={
         <Button onClick={() => setDialogo({ tipo: 'nuevo' })}>
           <Plus size={16} strokeWidth={1.5} />
@@ -261,7 +260,7 @@ export function Productos() {
         {dialogo?.tipo === 'baja' && (
           <Confirmacion
             puntos={[
-              'Dejará de venderse en las 5 sucursales.',
+              'Dejará de venderse en todas las sucursales.',
               'Sus ventas anteriores se conservan en los reportes.',
               'No se borra: aparecerá en "Dados de baja".',
             ]}
@@ -400,7 +399,7 @@ function FormularioPrecio({
         )}
       </div>
       <p className="text-[13px] text-tinta-suave">
-        Aplica en las 5 sucursales a partir de la siguiente venta. Las ventas ya registradas conservan su precio.
+        Aplica en todas las sucursales a partir de la siguiente venta. Las ventas ya registradas conservan su precio.
       </p>
       {error && <p className="text-[13px] text-ladrillo">{error}</p>}
       <Pie>

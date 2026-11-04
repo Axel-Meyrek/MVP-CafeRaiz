@@ -7,7 +7,6 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Select } from '../components/ui/Select'
 import { Tabs } from '../components/ui/Tabs'
 import { useDatos } from '../context/DatosContext'
-import { sucursales } from '../data/catalogo'
 import { cn } from '../lib/cn'
 import { estadoExistencia, type EstadoExistencia } from '../lib/reglas'
 import type { Existencia, Producto } from '../types'
@@ -37,12 +36,12 @@ const estilos: Record<EstadoExistencia | 'manual', { celda: string; punto: strin
 }
 
 export function InventarioGlobal() {
-  const { existencias, usuarios, productos } = useDatos()
+  const { existencias, usuarios, productos, sucursales } = useDatos()
   const [vista, setVista] = useState('todos')
   const [categoria, setCategoria] = useState('todas')
   const [busqueda, setBusqueda] = useState('')
 
-  const activas = sucursales.filter((s) => s.activa)
+  const activas = useMemo(() => sucursales.filter((s) => s.activa), [sucursales])
 
   // El admin ve el inventario de todas las sucursales, solo lectura (reglas 15 y 17).
   const filas: FilaMatriz[] = useMemo(
