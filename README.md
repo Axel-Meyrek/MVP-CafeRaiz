@@ -13,4 +13,4 @@ npm run lint      # revisar el código
 npm run deploy    # publicar en GitHub Pages (requiere el repositorio remoto)
 ```
 
-Por ahora la app usa datos de ejemplo (`src/data/`) y un inicio de sesión de demostración.
+Por ahora la app usa datos de ejemplo (`src/data/`).

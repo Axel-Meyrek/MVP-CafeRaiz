@@ -96,8 +96,7 @@ export function Login() {
           transition={{ duration: 0.5, delay: 0.15, ease: suave }}
           className="w-full max-w-sm"
         >
-          <p className="text-xs font-medium tracking-wide text-tinta-tenue uppercase">Modo demostración</p>
-          <h2 className="mt-2 text-2xl font-medium tracking-tight">Iniciar sesión</h2>
+          <h2 className="text-2xl font-medium tracking-tight">Iniciar sesión</h2>
           <p className="mt-1.5 text-sm text-tinta-suave">Elige un rol y una persona para entrar.</p>
 
           <Tabs valor={rol} alCambiar={cambiarRol} opciones={opcionesRol} className="mt-8 w-full" />
